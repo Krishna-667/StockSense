@@ -7,7 +7,9 @@ class TransferRepository {
     if (fromWarehouseId) where.fromWarehouseId = Number(fromWarehouseId);
     if (toWarehouseId) where.toWarehouseId = Number(toWarehouseId);
 
-    const skip = (page - 1) * limit;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 20);
+    const skip = (pageNum - 1) * limitNum;
 
     const [transfers, total] = await Promise.all([
       prisma.transfer.findMany({
@@ -27,12 +29,12 @@ class TransferRepository {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: limitNum,
       }),
       prisma.transfer.count({ where }),
     ]);
 
-    return { transfers, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return { transfers, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) };
   }
 
   async getById(id) {

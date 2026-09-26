@@ -90,12 +90,13 @@ class DashboardRepository {
 
   async getActivityFeed(limit = 10) {
     // We can pull recent validated receipts, deliveries, transfers, adjustments, and audit log
+    const limitNum = Math.max(1, parseInt(limit, 10) || 10);
     const auditLogs = await prisma.auditLog.findMany({
       include: {
         user: { select: { id: true, name: true, email: true, role: true } },
       },
       orderBy: { createdAt: 'desc' },
-      take: limit,
+      take: limitNum,
     });
 
     return auditLogs.map((log) => ({

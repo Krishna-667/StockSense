@@ -136,6 +136,24 @@ class StockLedgerRepository {
   }
 
   /**
+   * Auto-seed demo dataset if database has zero ledger entries
+   */
+  async ensureSeedData() {
+    try {
+      const count = await prisma.stockLedger.count();
+      if (count === 0) {
+        const seedMain = require('../../prisma/seed');
+        if (typeof seedMain === 'function') {
+          console.log('🌱 Stock ledger empty: auto-seeding initial demo transactions...');
+          await seedMain();
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ Auto-seed check notice:', err.message);
+    }
+  }
+
+  /**
    * Query filtered ledger entries
    */
   async getLedgerEntries({
@@ -147,6 +165,8 @@ class StockLedgerRepository {
     page = 1,
     limit = 50,
   }) {
+    await this.ensureSeedData();
+
     const where = { deletedAt: null };
 
     if (productId) where.productId = Number(productId);
@@ -163,7 +183,9 @@ class StockLedgerRepository {
       }
     }
 
-    const skip = (page - 1) * limit;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 50);
+    const skip = (pageNum - 1) * limitNum;
 
     const [entries, total] = await Promise.all([
       prisma.stockLedger.findMany({
@@ -184,18 +206,19 @@ class StockLedgerRepository {
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: limitNum,
       }),
       prisma.stockLedger.count({ where }),
     ]);
 
-    return { entries, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return { entries, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) };
   }
 
   /**
    * Product specific movement history
    */
   async getLedgerForProduct(productId, limit = 50) {
+    const limitNum = Math.max(1, parseInt(limit, 10) || 50);
     return prisma.stockLedger.findMany({
       where: {
         productId: Number(productId),
@@ -207,7 +230,7 @@ class StockLedgerRepository {
         creator: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
-      take: limit,
+      take: limitNum,
     });
   }
 

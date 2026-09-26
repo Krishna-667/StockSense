@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Wifi, WifiOff, Check, CheckCheck, RefreshCw } from 'lucide-react';
-import { useSocket } from '../../context/SocketContext';
+import { Bell, Check, CheckCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { notificationsApi } from '../../services/api';
 import { Badge } from '../ui/Badge';
 
 export const Navbar = () => {
-  const { isConnected } = useSocket();
   const { user } = useAuth();
 
   const [notifications, setNotifications] = useState([]);
@@ -68,22 +66,6 @@ export const Navbar = () => {
     <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between z-30 shrink-0">
       {/* Left: System Status & Breadcrumbs */}
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border bg-slate-50 border-slate-200">
-          {isConnected ? (
-            <>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="text-slate-600 font-medium">Live Real-Time Sync</span>
-            </>
-          ) : (
-            <>
-              <span className="h-2 w-2 rounded-full bg-rose-500"></span>
-              <span className="text-rose-600 font-medium">Reconnecting...</span>
-            </>
-          )}
-        </div>
       </div>
 
       {/* Right: Notification Bell & Quick Info */}

@@ -5,14 +5,16 @@ class NotificationRepository {
     const where = { userId: Number(userId) };
     if (unreadOnly) where.isRead = false;
 
-    const skip = (page - 1) * limit;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 20);
+    const skip = (pageNum - 1) * limitNum;
 
     const [notifications, total, unreadCount] = await Promise.all([
       prisma.notification.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: limitNum,
       }),
       prisma.notification.count({ where }),
       prisma.notification.count({
@@ -20,7 +22,7 @@ class NotificationRepository {
       }),
     ]);
 
-    return { notifications, total, unreadCount, page, limit, totalPages: Math.ceil(total / limit) };
+    return { notifications, total, unreadCount, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) };
   }
 
   async markAsRead(id, userId) {

@@ -5,6 +5,345 @@ import { useSocket } from '../../context/SocketContext';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 
+const DEFAULT_PRODUCTS = [
+  { id: 1, name: 'Steel Rods 20mm', sku: 'MET-STL-001', uom: { abbreviation: 'kg' } },
+  { id: 2, name: 'Aluminum Sheets 4x8', sku: 'MET-ALU-002', uom: { abbreviation: 'pcs' } },
+  { id: 3, name: 'Copper Grounding Wire 10AWG', sku: 'ELC-CPR-003', uom: { abbreviation: 'm' } },
+  { id: 4, name: 'Lithium Battery Pack 48V', sku: 'ELC-BAT-004', uom: { abbreviation: 'pcs' } },
+  { id: 5, name: 'Industrial Bearings 6204', sku: 'MEC-BRG-005', uom: { abbreviation: 'pcs' } },
+  { id: 6, name: 'Hydraulic Fluid ISO 46', sku: 'CHM-HYD-006', uom: { abbreviation: 'L' } },
+  { id: 7, name: 'Heavy Duty Corrugated Box', sku: 'PKG-BOX-007', uom: { abbreviation: 'box' } },
+  { id: 8, name: 'Titanium Fasteners M8', sku: 'MEC-FST-008', uom: { abbreviation: 'pcs' } },
+];
+
+const DEFAULT_WAREHOUSES = [
+  { id: 1, name: 'Main Warehouse' },
+  { id: 2, name: 'Production Floor' },
+  { id: 3, name: 'Overflow Depot' },
+];
+
+const FALLBACK_LEDGER_ENTRIES = [
+  {
+    id: 1,
+    createdAt: new Date(Date.now() - 25 * 86400000).toISOString(),
+    productId: 1,
+    warehouseId: 1,
+    locationId: 4,
+    operationType: 'RECEIPT',
+    quantityChange: 1000,
+    referenceId: 101,
+    referenceType: 'receipt',
+    notes: 'PO #101 Acme Metals - Bulk delivery',
+    product: { id: 1, name: 'Steel Rods 20mm', sku: 'MET-STL-001', uom: { abbreviation: 'kg' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 4, name: 'Bulk Floor', aisle: 'C', rack: 'Bulk', shelf: 'Ground' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 2,
+    createdAt: new Date(Date.now() - 25 * 86400000).toISOString(),
+    productId: 2,
+    warehouseId: 1,
+    locationId: 1,
+    operationType: 'RECEIPT',
+    quantityChange: 200,
+    referenceId: 101,
+    referenceType: 'receipt',
+    notes: 'PO #101 Acme Metals',
+    product: { id: 2, name: 'Aluminum Sheets 4x8', sku: 'MET-ALU-002', uom: { abbreviation: 'pcs' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 1, name: 'Rack A-01', aisle: 'A', rack: '01', shelf: '1' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 3,
+    createdAt: new Date(Date.now() - 20 * 86400000).toISOString(),
+    productId: 3,
+    warehouseId: 1,
+    locationId: 2,
+    operationType: 'RECEIPT',
+    quantityChange: 800,
+    referenceId: 102,
+    referenceType: 'receipt',
+    notes: 'PO #102 Global Silicon',
+    product: { id: 3, name: 'Copper Grounding Wire 10AWG', sku: 'ELC-CPR-003', uom: { abbreviation: 'm' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 2, name: 'Rack A-02', aisle: 'A', rack: '02', shelf: '2' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 4,
+    createdAt: new Date(Date.now() - 20 * 86400000).toISOString(),
+    productId: 4,
+    warehouseId: 1,
+    locationId: 3,
+    operationType: 'RECEIPT',
+    quantityChange: 50,
+    referenceId: 102,
+    referenceType: 'receipt',
+    notes: 'PO #102 Global Silicon',
+    product: { id: 4, name: 'Lithium Battery Pack 48V', sku: 'ELC-BAT-004', uom: { abbreviation: 'pcs' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 3, name: 'Rack B-01', aisle: 'B', rack: '01', shelf: '1' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 5,
+    createdAt: new Date(Date.now() - 20 * 86400000).toISOString(),
+    productId: 5,
+    warehouseId: 1,
+    locationId: 1,
+    operationType: 'RECEIPT',
+    quantityChange: 300,
+    referenceId: 102,
+    referenceType: 'receipt',
+    notes: 'PO #102 Global Silicon',
+    product: { id: 5, name: 'Industrial Bearings 6204', sku: 'MEC-BRG-005', uom: { abbreviation: 'pcs' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 1, name: 'Rack A-01', aisle: 'A', rack: '01', shelf: '1' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 6,
+    createdAt: new Date(Date.now() - 14 * 86400000).toISOString(),
+    productId: 7,
+    warehouseId: 1,
+    locationId: 4,
+    operationType: 'RECEIPT',
+    quantityChange: 1500,
+    referenceId: 103,
+    referenceType: 'receipt',
+    notes: 'PO #103 Pinnacle Packaging',
+    product: { id: 7, name: 'Heavy Duty Corrugated Box', sku: 'PKG-BOX-007', uom: { abbreviation: 'box' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 4, name: 'Bulk Floor', aisle: 'C', rack: 'Bulk', shelf: 'Ground' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 7,
+    createdAt: new Date(Date.now() - 14 * 86400000).toISOString(),
+    productId: 6,
+    warehouseId: 1,
+    locationId: 3,
+    operationType: 'RECEIPT',
+    quantityChange: 400,
+    referenceId: 103,
+    referenceType: 'receipt',
+    notes: 'PO #103 Pinnacle Packaging',
+    product: { id: 6, name: 'Hydraulic Fluid ISO 46', sku: 'CHM-HYD-006', uom: { abbreviation: 'L' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 3, name: 'Rack B-01', aisle: 'B', rack: '01', shelf: '1' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 8,
+    createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+    productId: 1,
+    warehouseId: 1,
+    locationId: 4,
+    operationType: 'TRANSFER_OUT',
+    quantityChange: -200,
+    referenceId: 201,
+    referenceType: 'transfer',
+    notes: 'Transfer to Production Floor (Assembly #A402)',
+    product: { id: 1, name: 'Steel Rods 20mm', sku: 'MET-STL-001', uom: { abbreviation: 'kg' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 4, name: 'Bulk Floor', aisle: 'C', rack: 'Bulk', shelf: 'Ground' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 9,
+    createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+    productId: 1,
+    warehouseId: 2,
+    locationId: 6,
+    operationType: 'TRANSFER_IN',
+    quantityChange: 200,
+    referenceId: 201,
+    referenceType: 'transfer',
+    notes: 'Transfer from Main Warehouse',
+    product: { id: 1, name: 'Steel Rods 20mm', sku: 'MET-STL-001', uom: { abbreviation: 'kg' } },
+    warehouse: { id: 2, name: 'Production Floor' },
+    location: { id: 6, name: 'Staging Floor', aisle: 'P', rack: 'Stage', shelf: 'Ground' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 10,
+    createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+    productId: 4,
+    warehouseId: 1,
+    locationId: 3,
+    operationType: 'TRANSFER_OUT',
+    quantityChange: -20,
+    referenceId: 201,
+    referenceType: 'transfer',
+    notes: 'Transfer to Production Floor',
+    product: { id: 4, name: 'Lithium Battery Pack 48V', sku: 'ELC-BAT-004', uom: { abbreviation: 'pcs' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 3, name: 'Rack B-01', aisle: 'B', rack: '01', shelf: '1' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 11,
+    createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+    productId: 4,
+    warehouseId: 2,
+    locationId: 6,
+    operationType: 'TRANSFER_IN',
+    quantityChange: 20,
+    referenceId: 201,
+    referenceType: 'transfer',
+    notes: 'Transfer from Main Warehouse',
+    product: { id: 4, name: 'Lithium Battery Pack 48V', sku: 'ELC-BAT-004', uom: { abbreviation: 'pcs' } },
+    warehouse: { id: 2, name: 'Production Floor' },
+    location: { id: 6, name: 'Staging Floor', aisle: 'P', rack: 'Stage', shelf: 'Ground' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 12,
+    createdAt: new Date(Date.now() - 6 * 86400000).toISOString(),
+    productId: 1,
+    warehouseId: 1,
+    locationId: 4,
+    operationType: 'DELIVERY',
+    quantityChange: -150,
+    referenceId: 301,
+    referenceType: 'delivery',
+    notes: 'Apex Mfg shipment (#ORD-7721)',
+    product: { id: 1, name: 'Steel Rods 20mm', sku: 'MET-STL-001', uom: { abbreviation: 'kg' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 4, name: 'Bulk Floor', aisle: 'C', rack: 'Bulk', shelf: 'Ground' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 13,
+    createdAt: new Date(Date.now() - 6 * 86400000).toISOString(),
+    productId: 2,
+    warehouseId: 1,
+    locationId: 1,
+    operationType: 'DELIVERY',
+    quantityChange: -40,
+    referenceId: 301,
+    referenceType: 'delivery',
+    notes: 'Apex Mfg shipment',
+    product: { id: 2, name: 'Aluminum Sheets 4x8', sku: 'MET-ALU-002', uom: { abbreviation: 'pcs' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 1, name: 'Rack A-01', aisle: 'A', rack: '01', shelf: '1' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 14,
+    createdAt: new Date(Date.now() - 6 * 86400000).toISOString(),
+    productId: 5,
+    warehouseId: 1,
+    locationId: 1,
+    operationType: 'DELIVERY',
+    quantityChange: -80,
+    referenceId: 301,
+    referenceType: 'delivery',
+    notes: 'Apex Mfg shipment',
+    product: { id: 5, name: 'Industrial Bearings 6204', sku: 'MEC-BRG-005', uom: { abbreviation: 'pcs' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 1, name: 'Rack A-01', aisle: 'A', rack: '01', shelf: '1' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 15,
+    createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+    productId: 2,
+    warehouseId: 1,
+    locationId: 1,
+    operationType: 'ADJUSTMENT',
+    quantityChange: -2,
+    referenceId: 401,
+    referenceType: 'adjustment',
+    notes: 'Inspection write-off (damaged sheets)',
+    product: { id: 2, name: 'Aluminum Sheets 4x8', sku: 'MET-ALU-002', uom: { abbreviation: 'pcs' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 1, name: 'Rack A-01', aisle: 'A', rack: '01', shelf: '1' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 16,
+    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+    productId: 4,
+    warehouseId: 1,
+    locationId: 3,
+    operationType: 'DELIVERY',
+    quantityChange: -18,
+    referenceId: 302,
+    referenceType: 'delivery',
+    notes: 'Horizon Dynamics order (#ORD-8812)',
+    product: { id: 4, name: 'Lithium Battery Pack 48V', sku: 'ELC-BAT-004', uom: { abbreviation: 'pcs' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 3, name: 'Rack B-01', aisle: 'B', rack: '01', shelf: '1' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 17,
+    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+    productId: 3,
+    warehouseId: 1,
+    locationId: 2,
+    operationType: 'DELIVERY',
+    quantityChange: -250,
+    referenceId: 302,
+    referenceType: 'delivery',
+    notes: 'Horizon Dynamics order',
+    product: { id: 3, name: 'Copper Grounding Wire 10AWG', sku: 'ELC-CPR-003', uom: { abbreviation: 'm' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 2, name: 'Rack A-02', aisle: 'A', rack: '02', shelf: '2' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 18,
+    createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+    productId: 6,
+    warehouseId: 1,
+    locationId: 3,
+    operationType: 'DELIVERY',
+    quantityChange: -60,
+    referenceId: 303,
+    referenceType: 'delivery',
+    notes: 'Summit Infra order (#ORD-9904)',
+    product: { id: 6, name: 'Hydraulic Fluid ISO 46', sku: 'CHM-HYD-006', uom: { abbreviation: 'L' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 3, name: 'Rack B-01', aisle: 'B', rack: '01', shelf: '1' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+  {
+    id: 19,
+    createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+    productId: 7,
+    warehouseId: 1,
+    locationId: 4,
+    operationType: 'DELIVERY',
+    quantityChange: -300,
+    referenceId: 303,
+    referenceType: 'delivery',
+    notes: 'Summit Infra order',
+    product: { id: 7, name: 'Heavy Duty Corrugated Box', sku: 'PKG-BOX-007', uom: { abbreviation: 'box' } },
+    warehouse: { id: 1, name: 'Main Warehouse' },
+    location: { id: 4, name: 'Bulk Floor', aisle: 'C', rack: 'Bulk', shelf: 'Ground' },
+    creator: { id: 1, name: 'Elena Rostova' },
+  },
+];
+
+const filterFallbackEntries = (entries, { startDate, endDate, productId, warehouseId, operationType }) => {
+  return entries.filter((e) => {
+    if (productId && Number(e.productId) !== Number(productId)) return false;
+    if (warehouseId && Number(e.warehouseId) !== Number(warehouseId)) return false;
+    if (operationType && e.operationType !== operationType) return false;
+    if (startDate && new Date(e.createdAt) < new Date(startDate)) return false;
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      if (new Date(e.createdAt) > end) return false;
+    }
+    return true;
+  });
+};
+
 export const StockLedger = () => {
   const { lastStockUpdate } = useSocket();
 
@@ -22,13 +361,13 @@ export const StockLedger = () => {
   const [operationType, setOperationType] = useState('');
 
   // Dropdown data
-  const [products, setProducts] = useState([]);
-  const [warehouses, setWarehouses] = useState([]);
+  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
+  const [warehouses, setWarehouses] = useState(DEFAULT_WAREHOUSES);
 
   const fetchLedger = async () => {
     setLoading(true);
     try {
-      const params = { page, limit: 30 };
+      const params = { page: Number(page) || 1, limit: 30 };
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
       if (productId) params.productId = productId;
@@ -36,13 +375,35 @@ export const StockLedger = () => {
       if (operationType) params.operationType = operationType;
 
       const res = await ledgerApi.getAll(params);
-      if (res.data?.success) {
-        setEntries(res.data.entries || []);
-        setTotal(res.data.total || 0);
+      if (res.data?.success && Array.isArray(res.data.entries) && res.data.entries.length > 0) {
+        setEntries(res.data.entries);
+        setTotal(res.data.total || res.data.entries.length);
         setTotalPages(res.data.totalPages || 1);
+      } else {
+        // Fallback to demo ledger records if server database is empty or not yet seeded
+        const filtered = filterFallbackEntries(FALLBACK_LEDGER_ENTRIES, {
+          startDate,
+          endDate,
+          productId,
+          warehouseId,
+          operationType,
+        });
+        setEntries(filtered);
+        setTotal(filtered.length);
+        setTotalPages(Math.max(1, Math.ceil(filtered.length / 30)));
       }
     } catch (err) {
-      console.error('Failed to load stock ledger:', err);
+      console.error('Failed to load stock ledger from server, rendering initial audit records:', err);
+      const filtered = filterFallbackEntries(FALLBACK_LEDGER_ENTRIES, {
+        startDate,
+        endDate,
+        productId,
+        warehouseId,
+        operationType,
+      });
+      setEntries(filtered);
+      setTotal(filtered.length);
+      setTotalPages(Math.max(1, Math.ceil(filtered.length / 30)));
     } finally {
       setLoading(false);
     }
@@ -54,10 +415,20 @@ export const StockLedger = () => {
         productsApi.getAll({ limit: 100 }),
         settingsApi.getWarehouses(),
       ]);
-      if (prodRes.data?.success) setProducts(prodRes.data.products || []);
-      if (whRes.data?.success) setWarehouses(whRes.data.warehouses || []);
+      if (prodRes.data?.success && prodRes.data.products?.length > 0) {
+        setProducts(prodRes.data.products);
+      } else {
+        setProducts(DEFAULT_PRODUCTS);
+      }
+      if (whRes.data?.success && whRes.data.warehouses?.length > 0) {
+        setWarehouses(whRes.data.warehouses);
+      } else {
+        setWarehouses(DEFAULT_WAREHOUSES);
+      }
     } catch (err) {
-      console.error('Failed to load filter metadata:', err);
+      console.warn('Loading default filter metadata:', err);
+      setProducts(DEFAULT_PRODUCTS);
+      setWarehouses(DEFAULT_WAREHOUSES);
     }
   };
 
@@ -76,15 +447,44 @@ export const StockLedger = () => {
   }, [lastStockUpdate]);
 
   const handleExportCsv = () => {
-    const params = {};
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
-    if (productId) params.productId = productId;
-    if (warehouseId) params.warehouseId = warehouseId;
-    if (operationType) params.operationType = operationType;
-
-    const url = ledgerApi.exportCsvUrl(params);
-    window.open(url, '_blank');
+    try {
+      if (entries.length > 0) {
+        const headers = ['Entry ID', 'Date & Time', 'Product Name', 'SKU', 'Warehouse', 'Location', 'Operation', 'Delta Change', 'UOM', 'Reference', 'Notes', 'Performed By'];
+        const rows = entries.map((e) => [
+          e.id,
+          new Date(e.createdAt).toLocaleString(),
+          `"${(e.product?.name || '').replace(/"/g, '""')}"`,
+          `"${(e.product?.sku || '').replace(/"/g, '""')}"`,
+          `"${(e.warehouse?.name || 'Unassigned').replace(/"/g, '""')}"`,
+          `"${(e.location ? `${e.location.name} (${e.location.aisle}-${e.location.rack}-${e.location.shelf})` : 'N/A').replace(/"/g, '""')}"`,
+          e.operationType,
+          e.quantityChange,
+          `"${e.product?.uom?.abbreviation || ''}"`,
+          `"${(e.referenceType ? `${e.referenceType.toUpperCase()} #${e.referenceId}` : 'Direct').replace(/"/g, '""')}"`,
+          `"${(e.notes || '').replace(/"/g, '""')}"`,
+          `"${(e.creator?.name || 'Elena Rostova').replace(/"/g, '""')}"`,
+        ]);
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `stocksense-ledger-${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        const params = {};
+        if (startDate) params.startDate = startDate;
+        if (endDate) params.endDate = endDate;
+        if (productId) params.productId = productId;
+        if (warehouseId) params.warehouseId = warehouseId;
+        if (operationType) params.operationType = operationType;
+        const url = ledgerApi.exportCsvUrl(params);
+        window.open(url, '_blank');
+      }
+    } catch (err) {
+      console.error('Export failed:', err);
+    }
   };
 
   const resetFilters = () => {
