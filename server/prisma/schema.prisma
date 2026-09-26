@@ -1,0 +1,377 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         String    @default("STAFF") // "MANAGER" or "STAFF"
+  refreshToken String?   @map("refresh_token")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  otps                Otp[]
+  receiptsCreated     Receipt[]       @relation("ReceiptCreator")
+  receiptsValidated   Receipt[]       @relation("ReceiptValidator")
+  deliveriesCreated   DeliveryOrder[] @relation("DeliveryCreator")
+  deliveriesValidated DeliveryOrder[] @relation("DeliveryValidator")
+  transfersCreated    Transfer[]      @relation("TransferCreator")
+  transfersValidated  Transfer[]      @relation("TransferValidator")
+  adjustmentsCreated  Adjustment[]    @relation("AdjustmentCreator")
+  adjustmentsValidated Adjustment[]   @relation("AdjustmentValidator")
+  stockLedgerEntries  StockLedger[]
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+
+  @@map("users")
+}
+
+model Otp {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  code      String
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("otps")
+}
+
+model Warehouse {
+  id        Int       @id @default(autoincrement())
+  name      String
+  address   String?
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  locations       Location[]
+  stockLedgers    StockLedger[]
+  transfersFrom   Transfer[]     @relation("TransferFromWarehouse")
+  transfersTo     Transfer[]     @relation("TransferToWarehouse")
+  adjustments     Adjustment[]
+  reorderRules    ReorderRule[]
+
+  @@map("warehouses")
+}
+
+model Location {
+  id          Int      @id @default(autoincrement())
+  warehouseId Int      @map("warehouse_id")
+  name        String
+  aisle       String?
+  rack        String?
+  shelf       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  warehouse       Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  receiptLines    ReceiptLine[]
+  deliveryLines   DeliveryLine[]
+  transfersFrom   Transfer[]      @relation("TransferFromLocation")
+  transfersTo     Transfer[]      @relation("TransferToLocation")
+  adjustments     Adjustment[]
+  stockLedgers    StockLedger[]
+
+  @@map("locations")
+}
+
+model ProductCategory {
+  id        Int      @id @default(autoincrement())
+  name      String
+  parentId  Int?     @map("parent_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  parent   ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children ProductCategory[] @relation("CategoryHierarchy")
+  products Product[]
+
+  @@map("product_categories")
+}
+
+model UnitOfMeasure {
+  id           Int      @id @default(autoincrement())
+  name         String
+  abbreviation String
+
+  products Product[]
+
+  @@map("units_of_measure")
+}
+
+model Product {
+  id           Int       @id @default(autoincrement())
+  name         String
+  sku          String    @unique
+  categoryId   Int?      @map("category_id")
+  uomId        Int?      @map("uom_id")
+  reorderLevel Float     @default(10) @map("reorder_level")
+  description  String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  category        ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  uom             UnitOfMeasure?   @relation(fields: [uomId], references: [id], onDelete: SetNull)
+  receiptLines    ReceiptLine[]
+  deliveryLines   DeliveryLine[]
+  transferLines   TransferLine[]
+  adjustmentLines AdjustmentLine[]
+  stockLedgers    StockLedger[]
+  reorderRules    ReorderRule[]
+
+  @@index([sku], name: "idx_products_sku")
+  @@map("products")
+}
+
+model Supplier {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  receipts Receipt[]
+
+  @@map("suppliers")
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  deliveries DeliveryOrder[]
+
+  @@map("customers")
+}
+
+model Receipt {
+  id          Int       @id @default(autoincrement())
+  supplierId  Int?      @map("supplier_id")
+  status      String    @default("Draft") // Draft, Waiting, Ready, Done, Cancelled
+  notes       String?
+  createdBy   Int?      @map("created_by")
+  validatedBy Int?      @map("validated_by")
+  validatedAt DateTime? @map("validated_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  supplier  Supplier?     @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  creator   User?         @relation("ReceiptCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  validator User?         @relation("ReceiptValidator", fields: [validatedBy], references: [id], onDelete: SetNull)
+  lines     ReceiptLine[]
+
+  @@index([status], name: "idx_receipts_status")
+  @@map("receipts")
+}
+
+model ReceiptLine {
+  id          Int   @id @default(autoincrement())
+  receiptId   Int   @map("receipt_id")
+  productId   Int   @map("product_id")
+  locationId  Int?  @map("location_id")
+  expectedQty Float @default(0) @map("expected_qty")
+  receivedQty Float @default(0) @map("received_qty")
+
+  receipt  Receipt   @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  product  Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  location Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@map("receipt_lines")
+}
+
+model DeliveryOrder {
+  id          Int       @id @default(autoincrement())
+  customerId  Int?      @map("customer_id")
+  status      String    @default("Draft") // Draft, Waiting, Ready, Done, Cancelled
+  notes       String?
+  createdBy   Int?      @map("created_by")
+  validatedBy Int?      @map("validated_by")
+  validatedAt DateTime? @map("validated_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  customer  Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  creator   User?          @relation("DeliveryCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  validator User?          @relation("DeliveryValidator", fields: [validatedBy], references: [id], onDelete: SetNull)
+  lines     DeliveryLine[]
+
+  @@index([status], name: "idx_deliveries_status")
+  @@map("delivery_orders")
+}
+
+model DeliveryLine {
+  id           Int   @id @default(autoincrement())
+  deliveryId   Int   @map("delivery_id")
+  productId    Int   @map("product_id")
+  locationId   Int?  @map("location_id")
+  requestedQty Float @default(0) @map("requested_qty")
+  deliveredQty Float @default(0) @map("delivered_qty")
+
+  delivery DeliveryOrder @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  product  Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  location Location?     @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@map("delivery_lines")
+}
+
+model Transfer {
+  id              Int       @id @default(autoincrement())
+  fromWarehouseId Int?      @map("from_warehouse_id")
+  toWarehouseId   Int?      @map("to_warehouse_id")
+  fromLocationId  Int?      @map("from_location_id")
+  toLocationId    Int?      @map("to_location_id")
+  status          String    @default("Draft") // Draft, Ready, Done, Cancelled
+  notes           String?
+  createdBy       Int?      @map("created_by")
+  validatedBy     Int?      @map("validated_by")
+  validatedAt     DateTime? @map("validated_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  fromWarehouse Warehouse?     @relation("TransferFromWarehouse", fields: [fromWarehouseId], references: [id], onDelete: SetNull)
+  toWarehouse   Warehouse?     @relation("TransferToWarehouse", fields: [toWarehouseId], references: [id], onDelete: SetNull)
+  fromLocation  Location?      @relation("TransferFromLocation", fields: [fromLocationId], references: [id], onDelete: SetNull)
+  toLocation    Location?      @relation("TransferToLocation", fields: [toLocationId], references: [id], onDelete: SetNull)
+  creator       User?          @relation("TransferCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  validator     User?          @relation("TransferValidator", fields: [validatedBy], references: [id], onDelete: SetNull)
+  lines         TransferLine[]
+
+  @@map("transfers")
+}
+
+model TransferLine {
+  id         Int   @id @default(autoincrement())
+  transferId Int   @map("transfer_id")
+  productId  Int   @map("product_id")
+  quantity   Float @default(0)
+
+  transfer Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("transfer_lines")
+}
+
+model Adjustment {
+  id          Int       @id @default(autoincrement())
+  warehouseId Int?      @map("warehouse_id")
+  locationId  Int?      @map("location_id")
+  status      String    @default("Draft") // Draft, Done, Cancelled
+  reason      String?
+  notes       String?
+  createdBy   Int?      @map("created_by")
+  validatedBy Int?      @map("validated_by")
+  validatedAt DateTime? @map("validated_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  warehouse Warehouse?       @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  location  Location?        @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  creator   User?            @relation("AdjustmentCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  validator User?            @relation("AdjustmentValidator", fields: [validatedBy], references: [id], onDelete: SetNull)
+  lines     AdjustmentLine[]
+
+  @@map("adjustments")
+}
+
+model AdjustmentLine {
+  id           Int   @id @default(autoincrement())
+  adjustmentId Int   @map("adjustment_id")
+  productId    Int   @map("product_id")
+  recordedQty  Float @default(0) @map("recorded_qty")
+  physicalQty  Float @default(0) @map("physical_qty")
+  deltaQty     Float @default(0) @map("delta_qty")
+
+  adjustment Adjustment @relation(fields: [adjustmentId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("adjustment_lines")
+}
+
+model StockLedger {
+  id             Int       @id @default(autoincrement())
+  productId      Int       @map("product_id")
+  warehouseId    Int?      @map("warehouse_id")
+  locationId     Int?      @map("location_id")
+  operationType  String    @map("operation_type") // RECEIPT, DELIVERY, TRANSFER_IN, TRANSFER_OUT, ADJUSTMENT
+  quantityChange Float     @map("quantity_change") // positive or negative
+  referenceId    Int?      @map("reference_id")
+  referenceType  String?   @map("reference_type") // receipt, delivery, transfer, adjustment
+  notes          String?
+  createdBy      Int?      @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  location  Location?  @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  creator   User?      @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([productId, warehouseId], name: "idx_stock_ledger_product_warehouse")
+  @@index([createdAt], name: "idx_stock_ledger_created_at")
+  @@map("stock_ledger")
+}
+
+model ReorderRule {
+  id              Int     @id @default(autoincrement())
+  productId       Int     @map("product_id")
+  warehouseId     Int     @map("warehouse_id")
+  minQuantity     Float   @default(10) @map("min_quantity")
+  reorderQuantity Float   @default(50) @map("reorder_quantity")
+  isActive        Boolean @default(true) @map("is_active")
+
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@map("reorder_rules")
+}
+
+model Notification {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  title         String
+  message       String
+  type          String   @default("info") // info, warning, success, alert
+  isRead        Boolean  @default(false) @map("is_read")
+  referenceId   Int?     @map("reference_id")
+  referenceType String?  @map("reference_type")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead], name: "idx_notifications_user_unread")
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  action    String
+  tableName String   @map("table_name")
+  recordId  Int?     @map("record_id")
+  oldValues String?  @map("old_values") // JSON serialized
+  newValues String?  @map("new_values") // JSON serialized
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_log")
+}

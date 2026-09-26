@@ -1,0 +1,13 @@
+{
+  "name": "stocksense",
+  "version": "1.0.0",
+  "description": "StockSense — Real-Time Modular Inventory Management System",
+  "private": true,
+  "scripts": {
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "seed": "npm run seed --prefix server",
+    "db:push": "npm run prisma:push --prefix server",
+    "build:client": "npm run build --prefix client"
+  }
+}
