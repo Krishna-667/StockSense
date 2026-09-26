@@ -3,15 +3,40 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased selection:bg-brand-500 selection:text-white;
+  html {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans antialiased selection:bg-zoho-red selection:text-white;
+    letter-spacing: -0.011em;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight font-bold text-slate-900;
+  }
+}
+
+/* Fine-line border utilities */
+.fine-border {
+  border-width: 1px;
+  border-color: rgba(226, 232, 240, 0.8);
+}
+
+.fine-line-accent {
+  width: 44px;
+  height: 3px;
+  border-radius: 9999px;
+  background-color: #f59e0b; /* Amber accent matching Zoho screenshots */
 }
 
 /* Custom scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;

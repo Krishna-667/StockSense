@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Boxes, ArrowLeft, KeyRound } from 'lucide-react';
+import { KeyRound, ArrowLeft, Mail, Lock, CheckCircle2 } from 'lucide-react';
 import { authApi } from '../../services/api';
 import { Button } from '../../components/ui/Button';
 
@@ -52,55 +52,86 @@ export const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="flex items-center justify-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-brand-600 flex items-center justify-center text-white shadow-xl shadow-brand-500/30">
-            <KeyRound className="w-7 h-7" />
+    <div className="min-h-screen bg-[#FCF7F6] text-slate-800 flex flex-col justify-between selection:bg-zoho-red selection:text-white">
+      {/* Top Header */}
+      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 py-3.5 px-4 sm:px-8 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="flex items-center gap-0.5">
+            <span className="w-3.5 h-3.5 rounded-xs bg-[#E52E2E]"></span>
+            <span className="w-3.5 h-3.5 rounded-xs bg-[#10B981]"></span>
+            <span className="w-3.5 h-3.5 rounded-xs bg-[#1A73E8]"></span>
+            <span className="w-3.5 h-3.5 rounded-xs bg-[#F59E0B]"></span>
           </div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">StockSense</h2>
+          <span className="text-xl font-bold tracking-tight text-slate-900">StockSense</span>
+        </Link>
+        <div className="text-xs sm:text-sm text-slate-600">
+          Remember your password?{' '}
+          <Link to="/login" className="font-bold text-zoho-red hover:underline">
+            Sign In
+          </Link>
         </div>
-        <p className="mt-2 text-center text-sm text-slate-400">
-          Secure OTP-Based Password Recovery
-        </p>
-      </div>
+      </header>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="bg-white py-8 px-6 shadow-2xl rounded-2xl sm:px-10 border border-slate-100">
+      {/* Main Container */}
+      <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-md w-full mx-auto relative z-10">
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 text-zoho-red flex items-center justify-center mx-auto mb-3">
+            <KeyRound className="w-6 h-6" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Reset Password
+          </h1>
+          <div className="fine-line-accent mx-auto my-3" />
+          <p className="text-sm text-slate-600 font-normal">
+            Secure OTP-based recovery for your StockSense enterprise account
+          </p>
+        </div>
+
+        <div className="bg-white py-8 px-6 sm:px-8 shadow-xl shadow-slate-200/60 rounded-2xl border border-slate-200">
           {step === 1 ? (
             <form className="space-y-4" onSubmit={handleSendOtp}>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
                   Registered Account Email
                 </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  placeholder="manager@stocksense.com"
-                  required
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-zoho-red/20 focus:border-zoho-red"
+                    placeholder="manager@stocksense.com"
+                    required
+                  />
+                </div>
               </div>
 
-              <p className="text-xs text-slate-500">
-                We'll generate a secure 6-digit OTP code to verify your identity.
+              <p className="text-xs text-slate-500 font-normal leading-relaxed">
+                We'll generate a secure 6-digit OTP code to verify your identity before resetting your password.
               </p>
 
-              <Button type="submit" loading={loading} className="w-full py-2.5 text-sm font-semibold">
+              <Button
+                type="submit"
+                loading={loading}
+                className="w-full py-3 text-sm font-bold uppercase tracking-wider bg-zoho-red hover:bg-zoho-redHover text-white rounded-lg shadow-sm hover:shadow-md transition-all"
+              >
                 Send Verification OTP
               </Button>
             </form>
           ) : (
             <form className="space-y-4" onSubmit={handleResetPassword}>
-              <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800">
-                OTP sent for <strong>{email}</strong>. (In development, check server console for code).
+              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>
+                  OTP code generated for <strong>{email}</strong>. (In development mode, inspect your server console for the code).
+                </span>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
                   6-Digit OTP Code
                 </label>
                 <input
@@ -108,36 +139,45 @@ export const ForgotPassword = () => {
                   maxLength={6}
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-center tracking-widest text-lg font-bold focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-center tracking-widest text-lg font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-zoho-red/20 focus:border-zoho-red"
                   placeholder="123456"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
                   New Password
                 </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  placeholder="Min 6 characters"
-                  required
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-zoho-red/20 focus:border-zoho-red"
+                    placeholder="Min 6 characters"
+                    required
+                  />
+                </div>
               </div>
 
-              <Button type="submit" loading={loading} className="w-full py-2.5 text-sm font-semibold">
+              <Button
+                type="submit"
+                loading={loading}
+                className="w-full py-3 text-sm font-bold uppercase tracking-wider bg-zoho-red hover:bg-zoho-redHover text-white rounded-lg shadow-sm hover:shadow-md transition-all"
+              >
                 Confirm & Reset Password
               </Button>
 
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="w-full text-xs text-slate-500 hover:text-slate-700 py-1"
+                className="w-full text-xs font-semibold text-slate-500 hover:text-slate-800 py-1"
               >
-                Change email address
+                ← Change email address
               </button>
             </form>
           )}
@@ -145,13 +185,18 @@ export const ForgotPassword = () => {
           <div className="mt-6 pt-4 border-t border-slate-100 text-center">
             <Link
               to="/login"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-zoho-red hover:underline"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back to sign in
             </Link>
           </div>
         </div>
       </div>
+
+      {/* Footer fine line */}
+      <footer className="py-6 text-center text-xs text-slate-500 border-t border-slate-200">
+        © 2026 StockSense Technologies Inc. All rights reserved.
+      </footer>
     </div>
   );
 };
