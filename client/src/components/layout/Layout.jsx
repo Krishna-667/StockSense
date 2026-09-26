@@ -5,7 +5,7 @@ import { Navbar } from './Navbar';
 
 export const Layout = () => {
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-axion-bg text-axion-dark overflow-hidden font-sans">
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Navbar />
